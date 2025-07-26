@@ -16,19 +16,19 @@ class IeniumVault
 
     IeniumVault (const std::wstring& application_name) : appName (application_name) {}
 
-    bool StoreCredentials (const std::wstring credentials_name, const std::string& credentials)
+    bool StoreCredentials (const std::wstring credentials_name, const std::string& credentials) const
     {
         const std::wstring target_name = std::wstring (appName + L"_" + credentials_name);
         return StoreCredentialsInternal (target_name, credentials);
     }
 
-    std::string GetCredentials (const std::wstring credentials_name)
+    std::string GetCredentials (const std::wstring credentials_name) const
     {
         std::wstring target_name = std::wstring (appName +  L"_" + credentials_name);
         return GetCredentialsInternal (target_name);
     }
 
-    bool DeleteCredentials (const std::wstring credentials_name)
+    bool DeleteCredentials (const std::wstring credentials_name) const
     {
         std::wstring target_name = std::wstring (appName +  L"_" + credentials_name);
         return DeleteCredentialsInternal (target_name);
@@ -36,7 +36,7 @@ class IeniumVault
 
 
     private:
-    bool StoreCredentialsInternal (const std::wstring& target_name, const std::string& credentials)
+    bool StoreCredentialsInternal (const std::wstring& target_name, const std::string& credentials) const
     {
         CREDENTIALW cred = {};
         cred.Type = CRED_TYPE_GENERIC;
@@ -57,7 +57,7 @@ class IeniumVault
         return true;
     }
 
-    std::string GetCredentialsInternal (const std::wstring& target_name)
+    std::string GetCredentialsInternal (const std::wstring& target_name) const
     {
         PCREDENTIALW pcred = nullptr;
         BOOL result = CredReadW (target_name.c_str (), CRED_TYPE_GENERIC, 0, &pcred);
@@ -77,7 +77,7 @@ class IeniumVault
         return credentials;
     }
 
-    bool DeleteCredentialsInternal (const std::wstring& target_name)
+    bool DeleteCredentialsInternal (const std::wstring& target_name) const
     {
         BOOL result = CredDeleteW(target_name.c_str(), CRED_TYPE_GENERIC, 0);
 
