@@ -2,8 +2,10 @@
 
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <iostream>
+#include <thread>
 #include <vector>
 #include <windows.h>
 #include <string>
@@ -22,19 +24,21 @@ class IeniumPipeServer
     std::function<void (std::string)> processMessageCallback;
     std::function<void (bool)> connectionStatusChangedCallback;
 
+    std::thread listenerThread;
+
     public:
-    IeniumPipeServer (const std::string& name, const DWORD buffer_size) : pipeName ("\\\\.\\pipe\\" + name), bufferSize (buffer_size) {}
+    IeniumPipeServer (const std::string& name, const DWORD buffer_size) : pipeName ("\\\\.\\pipe\\" + name), bufferSize (buffer_size), hPipe (INVALID_HANDLE_VALUE) {}
     
     bool StartServer ()
     {
         hPipe = CreateNamedPipe (
             pipeName.c_str (),
             PIPE_ACCESS_INBOUND,
-            PIPE_TYPE_MESSAGE,
-            PIPE_READMODE_MESSAGE,
+            PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,
             PIPE_UNLIMITED_INSTANCES,
             bufferSize,
             bufferSize,
+            5000,
             0 
         );
 
@@ -51,11 +55,33 @@ class IeniumPipeServer
 
     void Shutdown ()
     {
+        if (!running.load ())
+        {
+            return;
+        }
+
+        std::cout << "Initiating shutdown..." << std::endl;
         running.store (false);
+
         if (hPipe != INVALID_HANDLE_VALUE)
         {
+            CancelIoEx (hPipe, NULL);
+
+            DisconnectNamedPipe(hPipe);
+
+            Sleep (100);
+
             CloseHandle (hPipe);
+
+            hPipe = INVALID_HANDLE_VALUE;
         }
+        
+        if (listenerThread.joinable ())
+        {
+            listenerThread.join ();
+        }
+
+        std::cout << "Shutdown complete" << std::endl;
     }
 
     void SetProcessMessageCallback (std::function<void (std::string)> cb)
@@ -68,11 +94,19 @@ class IeniumPipeServer
         connectionStatusChangedCallback = cb;
     }
 
+    void StartListening ()
+    {
+        listenerThread = std::thread (
+            [this] () { this->ListenForMessages(); }
+        );
+    }
+    private:
     void ListenForMessages ()
     {
         while (running)
         {
             std::cout << "Waiting for client connection" << std::endl;
+            
 
             bool connected = ConnectNamedPipe (hPipe, NULL) ? TRUE : (GetLastError () == ERROR_PIPE_CONNECTED);
 
@@ -82,7 +116,7 @@ class IeniumPipeServer
                 if (connectionStatusChangedCallback != NULL)
                     connectionStatusChangedCallback (true);
 
-                while (running)
+                while (running.load ())
                 {
                     std::string full_message = ReadFullMessage ();
 
@@ -114,13 +148,13 @@ class IeniumPipeServer
             }
             else
             {
-                std::cerr << "ConnecNamedPipeFailed. Error: " << GetLastError () << std::endl;
+                std::cerr << "ConnectNamedPipeFailed. Error: " << GetLastError () << std::endl;
                 break;
             }
         }
     }
 
-    private:
+    
     std::string ReadFullMessage ()
     {
         std::vector<char> buffer (bufferSize);
@@ -146,7 +180,7 @@ class IeniumPipeServer
 
         if (total_bytes_avail == 0)
         {
-            std::cout << "Message is empty" << std::endl;
+            //std::cout << "Message is empty" << std::endl;
             return "";
         }
 
