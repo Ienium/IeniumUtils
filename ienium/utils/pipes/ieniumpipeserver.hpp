@@ -106,6 +106,7 @@ namespace ienium::utils
         private:
         void ListenForMessages ()
         {
+            std::cout << "Test\n";
             while (running)
             {
                 std::cout << "Waiting for client connection" << std::endl;
