@@ -12,7 +12,7 @@ class IeniumPipeClient
     private:
     HANDLE hPipe;
     std::string pipeName;
-    bool connected;
+    bool connected = false;
 
     public:
     IeniumPipeClient (const std::string& name) : pipeName ("\\\\.\\pipe\\" + name) {}
@@ -97,5 +97,10 @@ class IeniumPipeClient
 
         FlushFileBuffers (hPipe);
         return true;
+    }
+
+    bool IsConnected () const
+    {
+        return connected && hPipe != INVALID_HANDLE_VALUE;
     }
 };
