@@ -13,6 +13,8 @@ namespace ienium::utils
         const float aValue;
 
         public:
+        Color () : rValue (1.f), gValue (1.f), bValue (1.f), aValue (1.f) {}
+        
         Color (const float _r, const float _g, const float _b, const float _a = 1)
             :   rValue(std::clamp<float>(_r, 0.f, 1.f)),
                 gValue(std::clamp<float>(_g, 0.f, 1.f)),
