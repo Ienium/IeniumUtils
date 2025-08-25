@@ -67,7 +67,7 @@ namespace ienium::utils
                 break;
             }
             std::stringstream message_stream;
-            message_stream << color << time_string << level_string << "\n  " << message << def;
+            message_stream << color << time_string << level_string << "\n" << message << def << std::endl;
 
             std::cout  << message_stream.str () << std::endl;
         }
