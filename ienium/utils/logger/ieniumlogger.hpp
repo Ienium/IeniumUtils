@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -12,26 +13,27 @@ namespace ienium::utils
     // Define log levels
     enum LOGLEVEL
     {
-        IENIUM_DEBUG = 1 << 0,
-        IENIUM_INFO = 1 << 1,
+        IENIUM_DEBUG   = 1 << 0,
+        IENIUM_INFO    = 1 << 1,
         IENIUM_WARNING = 1 << 2,
-        IENIUM_ERROR = 1 << 3
+        IENIUM_ERROR   = 1 << 3
     };
 
     // Abstract Logger class
     class Logger
     {
-        public:
-        virtual void Log (LOGLEVEL level, std::string message) = 0;
+      public:
+        virtual void Log(LOGLEVEL level, std::string message) = 0;
         virtual ~Logger() {};
     };
 
     // Implementing console logger class
     class ConsoleLogger : public Logger
     {
-        virtual void Log (LOGLEVEL level, std::string message) override
+        virtual void Log(LOGLEVEL level, std::string message) override
         /*
-            Prints message with a header containing current time and loglevel to the console
+            Prints message with a header containing current time and loglevel to the
+           console
         */
         {
             std::string color;
@@ -39,70 +41,66 @@ namespace ienium::utils
 
             std::string level_string;
 
-            struct tm current_time;
-            auto t = std::time (nullptr);
-            localtime_s (&current_time,&t);
-            auto time_string = std::put_time(&current_time, "%H:%M:%S ");
-            
+            time_t current_time;
+            time(&current_time);
+
+            auto time_string = ctime(&current_time);
+
             switch (level)
             {
-                case IENIUM_DEBUG:
-                color = "\x1B[34m";
+            case IENIUM_DEBUG:
+                color        = "\x1B[34m";
                 level_string = "DEBUG";
                 break;
 
-                case IENIUM_INFO:
-                color = "\x1B[32m";
+            case IENIUM_INFO:
+                color        = "\x1B[32m";
                 level_string = "INFO";
                 break;
 
-                case IENIUM_WARNING:
-                color = "\x1B[33m";
+            case IENIUM_WARNING:
+                color        = "\x1B[33m";
                 level_string = "WARNING";
                 break;
 
-                case IENIUM_ERROR:
-                color = "\x1B[31m";
+            case IENIUM_ERROR:
+                color        = "\x1B[31m";
                 level_string = "ERROR";
                 break;
             }
             std::stringstream message_stream;
             message_stream << color << time_string << level_string << "\n" << message << def << std::endl;
 
-            std::cout  << message_stream.str () << std::endl;
+            std::cout << message_stream.str() << std::endl;
         }
     };
 
     // Singelton logger manager
     class LoggerManager
     {
-        private:
-        LoggerManager () {};
+      private:
+        LoggerManager() {};
 
         Logger* logger;
 
-        void DeleteLogger ()
+        void DeleteLogger()
         {
             if (logger != nullptr)
                 delete logger;
         }
 
-        public:
-        static LoggerManager& GetInstance ()
+      public:
+        static LoggerManager& GetInstance()
         {
             static LoggerManager instance;
 
             return instance;
         }
 
-        static void Shutdown ()
-        {
-            GetInstance ().DeleteLogger ();
-        }
+        static void Shutdown() { GetInstance().DeleteLogger(); }
 
         template <typename T>
-        std::enable_if_t<std::is_base_of_v<Logger, T>>
-        SetLogger ()
+        std::enable_if_t<std::is_base_of_v<Logger, T>> SetLogger()
         /*
             Create the implementing logger object
         */
@@ -112,13 +110,9 @@ namespace ienium::utils
                 delete logger;
             }
 
-            logger = new T ();
+            logger = new T();
         }
 
-        Logger* GetLogger ()
-        {
-            return logger;
-        }
-
+        Logger* GetLogger() { return logger; }
     };
-}
+} // namespace ienium::utils
